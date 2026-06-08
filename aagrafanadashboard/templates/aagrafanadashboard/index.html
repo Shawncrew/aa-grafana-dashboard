@@ -1,0 +1,30 @@
+{% extends "allianceauth/base.html" %}
+{% load i18n %}
+
+{% block page_title %}{% translate "Statistics" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1>{% translate "Statistics" %}</h1>
+
+    {% if dashboards %}
+        <div class="row">
+            {% for dashboard in dashboards %}
+                <div class="col-md-4">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ dashboard.title }}</h5>
+                            <a class="btn btn-primary btn-sm"
+                               href="{% url 'aagrafanadashboard:grafana_proxy' path=dashboard.url|slice:'1:' %}">
+                                {% translate "Open dashboard" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>{% translate "No dashboards are currently available." %}</p>
+    {% endif %}
+</div>
+{% endblock %}

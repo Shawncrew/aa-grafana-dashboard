@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aa-grafana-dashboard"
+version = "0.1.0"
+description = "Alliance Auth plugin adding a Statistics tab backed by an internal Grafana instance"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "allianceauth>=4.0.0",
+    "requests",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/aa-grafana-dashboard"
+
+[tool.setuptools.packages.find]
+include = ["aagrafanadashboard*"]
