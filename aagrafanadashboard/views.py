@@ -4,6 +4,7 @@ import requests
 from django.contrib.auth.decorators import login_required, permission_required
 from django.http import HttpRequest, HttpResponse, StreamingHttpResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from . import app_settings, helpers
@@ -32,11 +33,17 @@ def index(request: HttpRequest) -> HttpResponse:
     )
 
 
+@csrf_exempt
 @login_required
 @permission_required("aagrafanadashboard.can_view_grafana_statistics")
 @require_http_methods(["GET", "POST", "HEAD"])
 def grafana_proxy(request: HttpRequest, path: str = "") -> HttpResponse:
     """Transparently relay requests to the internal Grafana instance.
+
+    Exempt from Django's CSRF protection: Grafana's frontend authenticates
+    against this proxy via its own session/token model, not Django's CSRF
+    token, so the middleware would otherwise reject every POST it sends
+    (dashboard queries, feature-flag evaluation, frontend metrics, ...).
 
     Grafana is configured with `serve_from_sub_path = true` and a `root_url`
     matching `app_settings.GRAFANA_PROXY_PATH`, so it emits HTML/JS/API URLs
