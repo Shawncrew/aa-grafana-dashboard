@@ -19,3 +19,9 @@ Homepage = "https://github.com/your-org/aa-grafana-dashboard"
 
 [tool.setuptools.packages.find]
 include = ["aagrafanadashboard*"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+aagrafanadashboard = ["templates/**/*", "static/**/*"]
