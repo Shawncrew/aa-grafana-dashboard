@@ -50,6 +50,23 @@ def get_tagged_dashboards() -> list[dict]:
     return response.json()
 
 
+def dashboard_proxy_path(dashboard_url: str) -> str:
+    """Convert a dashboard URL returned by Grafana into a path for our proxy.
+
+    When Grafana is configured with `serve_from_sub_path = true`, the URLs it
+    returns (e.g. from /api/search) already include its configured sub-path
+    (= our GRAFANA_PROXY_PATH). The proxy URL adds that same prefix, so it
+    must be stripped here first to avoid doubling it.
+    """
+    path = dashboard_url.lstrip("/")
+    prefix = app_settings.GRAFANA_PROXY_PATH.strip("/")
+    if prefix:
+        prefix = f"{prefix}/"
+        if path.startswith(prefix):
+            path = path[len(prefix):]
+    return path
+
+
 def filter_proxy_request_headers(headers: dict) -> dict:
     """Strip hop-by-hop and host headers before forwarding a request to Grafana."""
     return {

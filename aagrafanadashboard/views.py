@@ -15,7 +15,13 @@ logger = logging.getLogger(__name__)
 @permission_required("aagrafanadashboard.can_view_grafana_statistics")
 def index(request: HttpRequest) -> HttpResponse:
     """Statistics tab landing page: lists dashboards tagged for Alliance Auth."""
-    dashboards = helpers.get_tagged_dashboards()
+    dashboards = [
+        {
+            "title": dashboard.get("title"),
+            "proxy_path": helpers.dashboard_proxy_path(dashboard.get("url", "")),
+        }
+        for dashboard in helpers.get_tagged_dashboards()
+    ]
     return render(
         request,
         "aagrafanadashboard/index.html",

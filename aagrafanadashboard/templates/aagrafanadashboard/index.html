@@ -15,7 +15,7 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ dashboard.title }}</h5>
                             <a class="btn btn-primary btn-sm"
-                               href="{% url 'aagrafanadashboard:grafana_proxy' path=dashboard.url|slice:'1:' %}">
+                               href="{% url 'aagrafanadashboard:grafana_proxy' path=dashboard.proxy_path %}">
                                 {% translate "Open dashboard" %}
                             </a>
                         </div>
