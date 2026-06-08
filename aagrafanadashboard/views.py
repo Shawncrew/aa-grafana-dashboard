@@ -53,6 +53,14 @@ def grafana_proxy(request: HttpRequest, path: str = "") -> HttpResponse:
         logger.warning("AAGRAFANADASHBOARD_GRAFANA_BASE_URL is not configured")
         return HttpResponse("Grafana proxy is not configured.", status=503)
 
+    if path.startswith("api/live/"):
+        # Grafana Live needs a WebSocket upgrade, which this synchronous
+        # request-based relay cannot perform. Respond immediately so the
+        # browser's reconnect loop fails fast client-side instead of being
+        # forwarded to Grafana, rejected, and logged here as "Bad Request"
+        # on every retry.
+        return HttpResponse(status=204)
+
     target_url = f"{app_settings.GRAFANA_PROXY_BASE_URL}{request.get_full_path()}"
 
     headers = helpers.filter_proxy_request_headers(dict(request.headers))
