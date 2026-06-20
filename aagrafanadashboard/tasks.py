@@ -86,6 +86,9 @@ def update_member_tracking(self):
                 token=token,
             ).results()
         except Exception as e:
+            if "304" in str(e) or "NotModified" in type(e).__name__:
+                logger.debug("ESI 304 for corp %s, skipping", corp_id)
+                continue
             logger.warning("ESI member tracking failed for corp %s: %s", corp_id, e)
             failed += 1
             continue
