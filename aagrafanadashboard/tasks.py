@@ -91,7 +91,7 @@ def update_member_tracking(self):
             continue
 
         for member in result:
-            char_id = member.get("character_id")
+            char_id = getattr(member, "character_id", None)
             if not char_id:
                 continue
 
@@ -99,15 +99,15 @@ def update_member_tracking(self):
                 corporation_id=corp_id,
                 character_id=char_id,
                 defaults={
-                    "logon_date": member.get("logon_date"),
-                    "logoff_date": member.get("logoff_date"),
-                    "ship_type_id": member.get("ship_type_id"),
-                    "location_id": member.get("location_id"),
-                    "start_date": member.get("start_date"),
+                    "logon_date": getattr(member, "logon_date", None),
+                    "logoff_date": getattr(member, "logoff_date", None),
+                    "ship_type_id": getattr(member, "ship_type_id", None),
+                    "location_id": getattr(member, "location_id", None),
+                    "start_date": getattr(member, "start_date", None),
                 },
             )
 
-        current_char_ids = [m["character_id"] for m in result if m.get("character_id")]
+        current_char_ids = [getattr(m, "character_id", None) for m in result if getattr(m, "character_id", None)]
         CorporationMemberTracking.objects.filter(
             corporation_id=corp_id
         ).exclude(
