@@ -83,7 +83,7 @@ def update_member_tracking(self):
         try:
             result = esi.client.Corporation.GetCorporationsCorporationIdMembertracking(
                 corporation_id=corp_id,
-                token=token.valid_access_token(),
+                token=token,
             ).results()
         except Exception as e:
             logger.warning("ESI member tracking failed for corp %s: %s", corp_id, e)
