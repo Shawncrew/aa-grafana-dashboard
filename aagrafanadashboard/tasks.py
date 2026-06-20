@@ -61,6 +61,7 @@ def update_member_tracking(self):
         compatibility_date=esi_module.__esi_compatibility_date__,
         ua_appname="aa-grafana-dashboard",
         ua_version="0.1.0",
+        tags=["Corporation"],
     )
 
     corp_ids = list(
