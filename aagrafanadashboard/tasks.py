@@ -55,8 +55,13 @@ def update_member_tracking(self):
         logger.error("eveonline app not installed")
         return
 
+    import esi as esi_module
     from esi.openapi_clients import ESIClientProvider
-    esi = ESIClientProvider()
+    esi = ESIClientProvider(
+        compatibility_date=esi_module.__esi_compatibility_date__,
+        ua_appname="aa-grafana-dashboard",
+        ua_version="0.1.0",
+    )
 
     corp_ids = list(
         EveCharacter.objects
