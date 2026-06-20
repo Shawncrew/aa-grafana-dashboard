@@ -81,7 +81,7 @@ def update_member_tracking(self):
             continue
 
         try:
-            result = esi.client.Corporation.get_corporations_corporation_id_membertracking(
+            result = esi.client.Corporation.GetCorporationsCorporationIdMembertracking(
                 corporation_id=corp_id,
                 token=token.valid_access_token(),
             ).results()
