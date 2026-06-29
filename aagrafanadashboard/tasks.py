@@ -120,3 +120,100 @@ def update_member_tracking(self):
         updated += 1
 
     logger.info("Member tracking updated for %d corps (%d failed)", updated, failed)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def refresh_character_affiliations(self):
+    """Update corp/alliance for all characters using public ESI affiliation endpoint."""
+    try:
+        EveCharacter = apps.get_model("eveonline", "EveCharacter")
+        EveCorporationInfo = apps.get_model("eveonline", "EveCorporationInfo")
+        EveAllianceInfo = apps.get_model("eveonline", "EveAllianceInfo")
+    except LookupError:
+        logger.error("eveonline app not installed")
+        return
+
+    import esi as esi_module
+    from esi.openapi_clients import ESIClientProvider
+    esi = ESIClientProvider(
+        compatibility_date=esi_module.__esi_compatibility_date__,
+        ua_appname="aa-grafana-dashboard",
+        ua_version="0.1.0",
+        tags=["Character"],
+    )
+
+    all_chars = list(
+        EveCharacter.objects.values_list("character_id", flat=True)
+    )
+
+    CHUNK_SIZE = 1000
+    updated = 0
+    errors = 0
+
+    for i in range(0, len(all_chars), CHUNK_SIZE):
+        chunk = all_chars[i:i + CHUNK_SIZE]
+        try:
+            result = esi.client.Character.PostCharactersAffiliation(
+                characters=chunk,
+            ).results()
+        except Exception as e:
+            if "304" in str(e) or "NotModified" in type(e).__name__:
+                continue
+            logger.warning("ESI affiliation failed for chunk %d: %s", i, e)
+            errors += 1
+            continue
+
+        corp_cache = {}
+        alliance_cache = {}
+
+        for entry in result:
+            char_id = getattr(entry, "character_id", None)
+            corp_id = getattr(entry, "corporation_id", None)
+            alliance_id = getattr(entry, "alliance_id", None)
+            if not char_id or not corp_id:
+                continue
+
+            try:
+                char = EveCharacter.objects.get(character_id=char_id)
+            except EveCharacter.DoesNotExist:
+                continue
+
+            if char.corporation_id == corp_id:
+                continue
+
+            if corp_id not in corp_cache:
+                corp_info = EveCorporationInfo.objects.filter(
+                    corporation_id=corp_id
+                ).first()
+                corp_cache[corp_id] = corp_info
+
+            corp_info = corp_cache[corp_id]
+            corp_name = corp_info.corporation_name if corp_info else str(corp_id)
+            corp_ticker = corp_info.corporation_ticker if corp_info else ""
+
+            alliance_name = ""
+            if alliance_id:
+                if alliance_id not in alliance_cache:
+                    alliance_info = EveAllianceInfo.objects.filter(
+                        alliance_id=alliance_id
+                    ).first()
+                    alliance_cache[alliance_id] = alliance_info
+                alliance_info = alliance_cache[alliance_id]
+                alliance_name = alliance_info.alliance_name if alliance_info else ""
+
+            logger.info(
+                "Updating %s: corp %s -> %s, alliance %s -> %s",
+                char.character_name,
+                char.corporation_name, corp_name,
+                char.alliance_name, alliance_name,
+            )
+
+            char.corporation_id = corp_id
+            char.corporation_name = corp_name
+            char.corporation_ticker = corp_ticker
+            char.alliance_id = alliance_id
+            char.alliance_name = alliance_name
+            char.save()
+            updated += 1
+
+    logger.info("Character affiliations refreshed: %d updated, %d errors", updated, errors)
