@@ -133,14 +133,7 @@ def refresh_character_affiliations(self):
         logger.error("eveonline app not installed")
         return
 
-    import esi as esi_module
-    from esi.openapi_clients import ESIClientProvider
-    esi = ESIClientProvider(
-        compatibility_date=esi_module.__esi_compatibility_date__,
-        ua_appname="aa-grafana-dashboard",
-        ua_version="0.1.0",
-        tags=["Character"],
-    )
+    import requests as http_requests
 
     all_chars = list(
         EveCharacter.objects.values_list("character_id", flat=True)
@@ -153,12 +146,14 @@ def refresh_character_affiliations(self):
     for i in range(0, len(all_chars), CHUNK_SIZE):
         chunk = all_chars[i:i + CHUNK_SIZE]
         try:
-            result = esi.client.Character.PostCharactersAffiliation(
-                characters=chunk,
-            ).results()
+            resp = http_requests.post(
+                "https://esi.evetech.net/latest/characters/affiliation/",
+                json=chunk,
+                timeout=30,
+            )
+            resp.raise_for_status()
+            result = resp.json()
         except Exception as e:
-            if "304" in str(e) or "NotModified" in type(e).__name__:
-                continue
             logger.warning("ESI affiliation failed for chunk %d: %s", i, e)
             errors += 1
             continue
@@ -167,9 +162,9 @@ def refresh_character_affiliations(self):
         alliance_cache = {}
 
         for entry in result:
-            char_id = getattr(entry, "character_id", None)
-            corp_id = getattr(entry, "corporation_id", None)
-            alliance_id = getattr(entry, "alliance_id", None)
+            char_id = entry.get("character_id")
+            corp_id = entry.get("corporation_id")
+            alliance_id = entry.get("alliance_id")
             if not char_id or not corp_id:
                 continue
 
